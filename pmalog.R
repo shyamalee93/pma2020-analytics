@@ -1,6 +1,5 @@
 # Analyze log
 
-
 OR_CODE <- "oR"
 OP_CODE <- "oP"
 EP_CODE <- "EP"
@@ -14,8 +13,6 @@ TIME_COL_NAME <- "V1"
 EVENT_COL_NAME <- "V2"
 SCREEN_COL_NAME <- "V3"
 VALUE_COL_NAME <- "V4"
-
-
 
 read_log <- function(f) {
     if (is.factor(f)) {
