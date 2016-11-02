@@ -7,7 +7,7 @@
 
 file_size <- function(rscript_dir, src_dir){
   #Set working directory as the rscripts_dir
-  setwd(rscript_dir)
+  #setwd(rscript_dir)
   
   #R Code in Rscripts directory
   source('analyze-dir.R')
@@ -38,4 +38,3 @@ file_size <- function(rscript_dir, src_dir){
   df <- analyze_dir(src_dir, fun)
   write.csv(df, file=file.choose())
 }
-file_size(rscript_dir, src_dir)
