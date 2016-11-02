@@ -1,6 +1,9 @@
 ##Get the RScripts directory from user
 #C:\Users\Shyamalee\Desktop\PMA2020\PMA2020
 #rscript_dir <- readline("Enter the R scripts directory")
+##Get the instance directory from user
+#D:\NGR3-Female-Questionnaire-v11\instances
+#src_dir <- readline("Enter the instance directory")
 
 file_size <- function(rscript_dir, src_dir){
   #Set working directory as the rscripts_dir
@@ -8,10 +11,6 @@ file_size <- function(rscript_dir, src_dir){
   
   #R Code in Rscripts directory
   source('analyze-dir.R')
-  
-  ##Get the instance directory from user
-  #D:\NGR3-Female-Questionnaire-v11\instances
-  #src_dir <- readline("Enter the instance directory")
   
   #Get submission, log and image file sizes
   fun <- function(path) {
