@@ -5,7 +5,7 @@
 #D:\NGR3-Female-Questionnaire-v11\instances
 #src_dir <- readline("Enter the instance directory")
 
-file_size <- function(rscript_dir, src_dir){
+file_size <- function(src_dir, output){
   #Set working directory as the rscripts_dir
   #setwd(rscript_dir)
   
@@ -28,13 +28,13 @@ file_size <- function(rscript_dir, src_dir){
     jpeg <- allfiles[grep("*.\\.[jJ][pP][eE]?[gG]$", allfiles)]
     jpeg_path <- file.path(path, jpeg)
     jpeg_size <- file.info(jpeg_path)$size
-    jpeg_size<- ifelse(length(jpeg_size)== 0, NA, jpeg_size)
-    jpeg_size <- ifelse(length(jpeg_size) >1, Reduce("+",jpeg_size), jpeg_size)
+    jpeg_size<- ifelse(length(jpeg_size)== 0, NA, sum(jpeg_size))
+    #jpeg_size <- ifelse(length(jpeg_size) >1, Reduce("+",jpeg_size), jpeg_size)
     
     df <- data.frame(path=path, xml=xml_size, log=log_size, jpeg = jpeg_size)
     df
   }
   
   df <- analyze_dir(src_dir, fun)
-  write.csv(df, file=file.choose())
+  write.csv(df, file = output)
 }

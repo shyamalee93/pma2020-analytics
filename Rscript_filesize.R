@@ -24,14 +24,21 @@
 #opt_parser = OptionParser(option_list=option_list);
 #opt = parse_args(opt_parser, args = commandArgs(TRUE));
 
+rscript_dir <- "C:\\Users\\Shyamalee\\Desktop\\PMA2020\\PMA2020"
 
 args <- commandArgs(TRUE)
-rscript_dir <- args[1]
-src_dir <- args[2]
-#Set working directory as the rscripts_dir
-setwd(rscript_dir)
-source("C:\\Users\\Shyamalee\\Desktop\\PMA2020\\PMA2020\\file_script.R")
-file_size(rscript_dir, src_dir)
+
+if (length(args)!= 2) {
+  stop("Two arguments must be supplied, the instances directory and name of the output file", call.=FALSE)
+} else{
+  # default output file
+  src_dir <- args[1]
+  output <- args[2]
+  #Set working directory as the rscripts_dir
+  setwd(rscript_dir)
+  source("file_script.R")
+  file_size(src_dir, output)
+}
 
 #C:\Users\Shyamalee\Desktop\PMA2020\PMA2020\Rscript_filesize.R
 #Rscript C:\Users\Shyamalee\Desktop\PMA2020\PMA2020\Rscript_filesize.R C:\Users\Shyamalee\Desktop\PMA2020\PMA2020  D:\NGR3-Female-Questionnaire-v11\instances
