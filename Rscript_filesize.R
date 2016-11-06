@@ -36,7 +36,7 @@ if (length(args)!= 2) {
   output <- args[2]
   #Set working directory as the rscripts_dir
   setwd(rscript_dir)
-  source("file_script.R")
+  source("Instancetime.R")
   file_size(src_dir, output)
 }
 
