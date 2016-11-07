@@ -199,5 +199,5 @@ file_size <- function(src_dir, output){
     main_df
   }
   df <- analyze_dir(src_dir, fun)
-  write.csv(df, file = output)
+  write.csv(df, file = output, row.names=F)
 }
