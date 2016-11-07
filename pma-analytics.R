@@ -3,7 +3,7 @@
 args <- commandArgs(TRUE)
 
 print_usage <- function() {
-  cat("usage: Rscript analytics.R scripts_directory storage_directory form_id export_directory export_filename")
+  cat("usage: Rscript pma-analytics.R scripts_directory storage_directory form_id export_directory export_filename")
   cat("\n\n")
   cat("Positional arguments:")
   cat("\n")
