@@ -193,7 +193,7 @@ file_size <- function(src_dir, output){
       df2 <- do.call(rbind, out_list)
       df2
     #}
-    df <- data.frame(Path=path, XML_Size=xml_size, Log_Size=log_size, JPEG_Size = jpeg_size)
+    df <- data.frame(Path= basename(path), XML_Size=xml_size, Log_Size=log_size, JPEG_Size = jpeg_size)
     #df
     main_df <- cbind(df,df2)
     main_df
