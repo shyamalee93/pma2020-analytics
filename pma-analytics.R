@@ -32,19 +32,29 @@ if (length(args) < 1) {
 
   #------------------------- BEGIN PMA ANALYTICS ----------------------#
   setwd(scripts_directory)
-  source("Instancetime.R")
+
+  # ..... check FORM ID ..... #
   source("form-lookup.R")
-  
   form_title <- form_id_map[[form_id]]
   if (is.null(form_title)) {
     stop("Unknown form_id: \"", form_id,"\". Check \"form-lookup.R\".")
   }
 
-  src_dir <- file.path(storage_directory, "ODK Briefcase Storage", "forms", form_id, "instances")
-  output <- file.path(export_directory, export_filename)
-  
+  # ..... setup and feedback ..... #
+  src_dir <- file.path(storage_directory, "ODK Briefcase Storage", "forms", form_title, "instances")
+  outpath <- file.path(export_directory, export_filename)
   cat("  Analyzing instances downloaded into:", src_dir, "\n")
-  cat("  Output file:", output, "\n")
-  file_size(src_dir, output)
+  cat("  Intended output file:", outpath, "\n")
+  
+  # ..... get the function ..... #
+  source("all-analysis.R")
+  tags <- form_tags[[form_id]]
+  prompts <- form_prompts[[form_id]]
+  FUN <- do_all_analysis(prompts=prompts, tags=tags)
+  
+  # ..... apply the function ..... #
+  source("analyze-dir.R")
+  analyze_dir_and_write(src_dir, FUN, outpath)
+  # file_size(src_dir, output)
   cat("Wrote output file\n")
 }

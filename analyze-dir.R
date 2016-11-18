@@ -26,3 +26,17 @@ analyze_dir <- function(src_dir, fun) {
     sub_dir <- file.path(src_dir,dir(src_dir))
     apply_fun_dir(sub_dir, fun)
 }
+
+#' Apply a function to each subdirectory and write out to file
+#' 
+#' Use this function to write out to file the results of the main 
+#' entry point for analysis (function "analyze_dir").
+#' 
+#' @param src_dir A parent directory filled with only subdirectories
+#' @param fun A function that accepts the path to a directory with 
+#' files for analysis and returns one row of a common data frame
+#' @param outpath A string naming a file (passed to write.csv)
+analyze_dir_and_write <- function(src_dir, fun, outpath) {
+    df <- analyze_dir(src_dir, fun)
+    write.csv(df, file=outpath)
+}
