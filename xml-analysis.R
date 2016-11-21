@@ -23,7 +23,6 @@ read_submission <- function(f) {
 #' searching for XML tags defined by info
 extract_by_tags <- function(sub_dir, tags) {
     if (is.null(tags)) {
-        # TODO: DYNAMIC SEARCH FOR TAGS
         return(NULL)
     }
     xml_file <- file.path(sub_dir, "submission.xml")

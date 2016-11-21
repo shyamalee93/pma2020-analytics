@@ -6,13 +6,14 @@ EP_CODE <- "EP"
 LP_CODE <- "LP"
 rV_CODE <- "rV"
 rS_CODE <- "rS"
+CC_CODE <- "CC"
 SUBMISSION_FILE <- "submission.xml"
 LOG_FILE <- "log.txt"
 
-TIME_COL_NAME <- "V1"
-EVENT_COL_NAME <- "V2"
-SCREEN_COL_NAME <- "V3"
-VALUE_COL_NAME <- "V4"
+TIME_COL <- 1
+EVENT_COL <- 2
+PROMPT_COL <- 3
+VALUE_COL <- 4
 
 # 0.4 second
 ONE_SWIPE <- 400
@@ -23,11 +24,53 @@ read_log <- function(f) {
     if (is.factor(f)) {
         f <- as.character(f)
     }
-    read.table(f, sep='\t', quote="")
+    df <- read.table(f, sep='\t', quote="")
+    colnames(df) <- c("TIME", "EVENT", "PROMPT", "VALUE")
+    return(df)
 }
 
-distill_orop <- function(log_df, OR_OP_TOL) {
-    pared_df <- data.frame(timestamp=log_df$V1, code=log_df$V2)
+# on_codes=c(OR_CODE, EP_CODE)   **OR**    on_codes=OR_CODE
+distill_on_off <- function(log_df, on_codes, off_codes, tol=ONE_SWIPE) {
+    on_off_df <- subset(log_df, log_df$EVENT %in% c(on_codes, off_codes))
+    on_off_df$EVENT <- droplevels(on_off_df$EVENT)
+    # Give a 1 for all codes that turn "on" and give a 0 for all codes that turn "off"
+    on_off_df$ON <- as.numeric(on_off_df$EVENT %in% on_codes)
+    if (tol > 0) {
+        # The next goal is to split into sections of ON and OFF
+        # if ON is c(1,1,0,1,1,0,0,1,1,0,1,0), then this returns
+        #          c(0,0,1,2,2,3,3,4,4,5,6,7)
+        moment <- c(0, cumsum(abs(diff(on_off_df$ON))))
+        my_split <- split(on_off_df, moment)
+        # Collapse timestamps together and unsplit the data frame
+        on_off_df <- unsplit(lapply(my_split, function(x) {
+            if (nrow(x) > 1) {
+                min_time <- min(x$TIME)
+                # Integer division gets us the time collapsing
+                new_times <- ((x$TIME - min_time) %/% tol) * tol + min_time
+                x$TIME <- new_times
+            }
+            x
+        }), moment)
+    }
+    # Remove duplicate rows (for multi-prmopt)
+    on_off_df[!duplicated(on_off_df[, c("TIME", "ON")]),]
+}
+
+
+#' @param on_off Vector of 1 and 0 for ON and OFF. Created previously with 
+#' distill_on_off
+check_on_off <- function(on_off) {
+    zeros <- rep(1, length(on_off))
+    zeros[on_off == 0] <- -1
+    status <- cumsum(zeros)
+    starts <- status[1] == 1
+    ends <- status[length(status)] == 0
+    not_too_many <- sum(status > 1) == 0 && sum(status < 0) == 0
+    return(starts & ends & not_too_many)
+}
+
+distill_orop <- function(log_df, OR_OP_TOL=ONE_SWIPE) {
+    pared_df <- data.frame(timestamp=log_df$TIME, code=log_df$EVENT)
     orop <- subset(pared_df, code==OR_CODE | code==OP_CODE)
     orop$code <- droplevels(orop$code)
     # crazy code to get a split based on changes of groups of oP -> oR and oR -> oP
@@ -147,28 +190,28 @@ clean_orop <- function(orop, full_df) {
 #' and "short_break".
 #' 
 #' @param log_df A log in data frame format
-#' @param OR_OP_TOL The tolerance for different questions that show 
+#' @param resumed_tol The tolerance for different questions that show 
 #' consecutive onResume. Necessary because two questions on the same 
 #' screen might not "OR" at the same time. Same for "OP"
-#' @param BREAK_TOL The tolerance for short breaks.
+#' @param break_tol The tolerance for short breaks.
 #' @return A one-row data frame. First column is whether or not the 
 #' log timings are valid with totals of resumed, paused, and 
 #' short_break timing. 
-summarize_log_timing <- function(log_df, OR_OP_TOL=NULL, BREAK_TOL=NULL) {
-    if (is.null(OR_OP_TOL)) {
-        OR_OP_TOL <- ONE_SWIPE
+summarize_log_timing <- function(log_df, resumed_tol=NULL, break_tol=NULL) {
+    if (is.null(resumed_tol)) {
+        resumed_tol <- ONE_SWIPE
     }
-    if (is.null(BREAK_TOL)) {
-        BREAK_TOL <- THIRTY_MIN
+    if (is.null(break_tol)) {
+        break_tol <- THIRTY_MIN
     }
     if (!is.null(log_df)) {
-        orop <- distill_orop(log_df, OR_OP_TOL)
+        orop <- distill_orop(log_df, resumed_tol)
         # Fix missing onPause, add onPause after trailing onResume
         cleaned <- clean_orop(orop, log_df)
         valid <- check_orop(cleaned$code)
         resumed <- ifelse(valid, resumed_time(cleaned$timestamp)/1000, NA)
         paused <- ifelse(valid, paused_time(cleaned$timestamp)/1000, NA)
-        short_break <- ifelse(valid, stoppage_time(cleaned$timestamp, BREAK_TOL)/1000, NA)
+        short_break <- ifelse(valid, stoppage_time(cleaned$timestamp, break_tol)/1000, NA)
         df <- data.frame(
             valid_log=valid, 
             resumed=resumed, 
@@ -195,21 +238,45 @@ summarize_log_timing <- function(log_df, OR_OP_TOL=NULL, BREAK_TOL=NULL) {
 #' prompts. 
 summarize_screen_timing <- function(log_df, prompts) {
     if (is.null(prompts)) {
+        # TODO: dynamically find prompts
         return(NULL)
     }
     if (is.null(log_df)) {
-        out <- rep(NA, length(prompts))
-        names(out) <- prompts
+        name_cc <- paste0(prompts, "_CC")
+        name_time <- paste0(prompts, "_time")
+        name_visits <- paste0(prompts, "_visits")
+        all_names <- c(rbind(name_cc, name_time, name_visits))
+        out <- rep(NA, length(all_names))
+        names(out) <- all_names
         df <- data.frame(as.list(out))
         df
     } else {
         out <- lapply(prompts, function(prompt) {
             # Keep the rows that have the prompt in it
-            df <- subset(log_df, grepl(prompt, log_df[,SCREEN_COL_NAME]))
-            # TODO generate for "prompt" a 1-row data frame with:
-            #         (1) "prompt_time"       -> total time spent on prompt
-            #         (2) "prompt_visits"     -> total visits to prompt
-            #         (3) "prompt_constraint" -> total times a constraint was contravened
+            this_prompt <- paste0(prompt, "\\[1\\]")
+            df <- log_df[grep(this_prompt, log_df$PROMPT),]
+            if (nrow(df) > 0) {
+                # TODO generate for "prompt" a 1-row data frame with:
+                #         (1) "prompt_constraint" -> total times a constraint was contravened
+                constraint <- sum(df$EVENT == CC_CODE)
+                # For the next two, get the ON/OFF dataframe
+                on_off_df <- distill_on_off(df, on_codes=c(EP_CODE, OR_CODE), off_codes=c(LP_CODE, OP_CODE), tol=ONE_SWIPE)
+                #         (2) "prompt_time"       -> total time spent on prompt
+                valid <- check_on_off(on_off_df$ON)
+                time <- NA
+                if (valid) {
+                    time <- resumed_time(on_off_df$TIME)/1000
+                }
+                #         (3) "prompt_visits"     -> total visits to prompt
+                visits <- sum(on_off_df$ON)
+                result <- data.frame(CC=constraint, time=time, visits=visits)
+                colnames(result) <- paste(prompt, colnames(result), sep="_")
+                return(result)
+            } else {
+                result <- data.frame(CC=NA, time=NA, visits=NA)
+                colnames(result) <- paste(prompt, colnames(result), sep="_")
+                return(result)
+            }
         })
         # join all the results together
         do.call(cbind, out)

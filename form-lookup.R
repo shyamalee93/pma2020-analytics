@@ -47,6 +47,7 @@ form_prompts <- list(
         "system_date",
         "EA",
         "position",
-        "fp_begin"
+        "fp_begin", 
+        "XYZ"
     )
 )

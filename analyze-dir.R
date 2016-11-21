@@ -38,5 +38,5 @@ analyze_dir <- function(src_dir, fun) {
 #' @param outpath A string naming a file (passed to write.csv)
 analyze_dir_and_write <- function(src_dir, fun, outpath) {
     df <- analyze_dir(src_dir, fun)
-    write.csv(df, file=outpath)
+    write.csv(df, file=outpath, row.names=FALSE)
 }
