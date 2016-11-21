@@ -7,7 +7,7 @@ source("xml-analysis.R")
 #' A function that initializes and returns a function
 #'
 #'
-do_all_analysis <- function(prompts=NULL, tags=NULL, OR_OP_TOL=NULL, BREAK_TOL=NULL) {
+do_all_analysis <- function(prompts=NULL, milestones=NULL, tags=NULL, resumed_tol=NULL, break_tol=NULL) {
     analyzer <- function(sub_dir) {
         # identify the data with the uuid
         uuid_df <- data.frame(dir_uuid=basename(sub_dir))
@@ -19,23 +19,26 @@ do_all_analysis <- function(prompts=NULL, tags=NULL, OR_OP_TOL=NULL, BREAK_TOL=N
         if (file.exists(log_file)) {
             log_df <- read_log(log_file)
         }
-        overall_timing_df <- summarize_log_timing(log_df, OR_OP_TOL, BREAK_TOL)
-
+        # from instance.R
+        overall_timing_df <- summarize_log_timing(log_df, resumed_tol, break_tol)
         # from instance.R
         prompts_df <- summarize_screen_timing(log_df, prompts=prompts)
-        
+        # from instance.R
+        milestones_df <- get_milestone_timing(log_df, milestones=milestones)
         # from xml-analysis.R
         tags_df <- extract_by_tags(sub_dir, tags=tags)
         
+        # ........... COMBINE EVERYTHING TOGETHER ............ #
         # First look at the super data frame
         super_df <- cbind(uuid_df, file_size_df, overall_timing_df)
-        
-        
         # Add on prompts data frame if exists
         if (!is.null(prompts_df)) {
             super_df <- cbind(super_df, prompts_df)
         }
-        
+        # Add on milestones data frame if exists
+        if (!is.null(milestones_df)) {
+            super_df <- cbind(super_df, milestones_df)
+        }
         # Add on xml tags data frame if exists
         if (!is.null(tags_df)) {
             super_df <- cbind(super_df, tags_df)

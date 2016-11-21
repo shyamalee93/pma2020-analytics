@@ -209,9 +209,9 @@ summarize_log_timing <- function(log_df, resumed_tol=NULL, break_tol=NULL) {
         # Fix missing onPause, add onPause after trailing onResume
         cleaned <- clean_orop(orop, log_df)
         valid <- check_orop(cleaned$code)
-        resumed <- ifelse(valid, resumed_time(cleaned$timestamp)/1000, NA)
-        paused <- ifelse(valid, paused_time(cleaned$timestamp)/1000, NA)
-        short_break <- ifelse(valid, stoppage_time(cleaned$timestamp, break_tol)/1000, NA)
+        resumed <- ifelse(valid, round(resumed_time(cleaned$timestamp)/1000), NA)
+        paused <- ifelse(valid, round(paused_time(cleaned$timestamp)/1000), NA)
+        short_break <- ifelse(valid, round(stoppage_time(cleaned$timestamp, break_tol)/1000), NA)
         df <- data.frame(
             valid_log=valid, 
             resumed=resumed, 
@@ -253,7 +253,7 @@ summarize_screen_timing <- function(log_df, prompts) {
     } else {
         out <- lapply(prompts, function(prompt) {
             # Keep the rows that have the prompt in it
-            this_prompt <- paste0(prompt, "\\[1\\]")
+            this_prompt <- paste0("(^|/)",prompt, "\\[1\\]")
             df <- log_df[grep(this_prompt, log_df$PROMPT),]
             if (nrow(df) > 0) {
                 # TODO generate for "prompt" a 1-row data frame with:
@@ -265,7 +265,7 @@ summarize_screen_timing <- function(log_df, prompts) {
                 valid <- check_on_off(on_off_df$ON)
                 time <- NA
                 if (valid) {
-                    time <- resumed_time(on_off_df$TIME)/1000
+                    time <- round(resumed_time(on_off_df$TIME)/1000)
                 }
                 #         (3) "prompt_visits"     -> total visits to prompt
                 visits <- sum(on_off_df$ON)
@@ -280,5 +280,39 @@ summarize_screen_timing <- function(log_df, prompts) {
         })
         # join all the results together
         do.call(cbind, out)
+    }
+}
+
+#' Create a one-row data frame with the timestamp for the first time 
+#' milestone prompt was reached.
+#' 
+#' @param log_df A log in data frame format
+#' @param milestones A vector of milestone prompts to examine. 
+#' Milestones are reported in order.
+#' @return A one-row data frame with one header for each prompt in 
+#' prompts. 
+get_milestone_timing <- function(log_df, milestones) {
+    if (is.null(milestones)) {
+        return(NULL)
+    }
+    if (is.null(log_df)) {
+        name_ms <- paste0("MS_",prompts)
+        out <- rep(NA, length(name_ms))
+        names(out) <- all_names
+        data.frame(as.list(out))
+    } else {
+        cur_min <- 0
+        out <- sapply(milestones, function(prompt){
+            this_prompt <- paste0("(^|/)", prompt, "\\[1\\]")
+            df <- subset(log_df, (EVENT == EP_CODE | EVENT == OR_CODE) & grepl(this_prompt, PROMPT) & TIME > cur_min)
+            if (nrow(df) > 0) {
+                time <- df$TIME[1]
+                cur_min <<- time
+                round(time/1000)
+            } else {
+                NA
+            }
+        })
+        data.frame(as.list(out))
     }
 }

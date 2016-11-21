@@ -48,13 +48,17 @@ if (length(args) < 1) {
   
   # ..... get the function ..... #
   source("all-analysis.R")
-  tags <- form_tags[[form_id]]
   prompts <- form_prompts[[form_id]]
-  FUN <- do_all_analysis(prompts=prompts, tags=tags)
+  milestones <- form_milestones[[form_id]]
+  tags <- form_tags[[form_id]]
+  FUN <- do_all_analysis(prompts=prompts, milestones=milestones, tags=tags)
   
   # ..... apply the function ..... #
   source("analyze-dir.R")
+  start_time <- Sys.time()
   analyze_dir_and_write(src_dir, FUN, outpath)
+  end_time <- Sys.time()
+  diff_time <- round(as.numeric(end_time - start_time, units="secs"))
   # file_size(src_dir, output)
-  cat("Wrote output file\n")
+  cat("Wrote output file. Analysis took", diff_time, "seconds.\n")
 }

@@ -27,7 +27,6 @@ extract_by_tags <- function(sub_dir, tags) {
     }
     xml_file <- file.path(sub_dir, "submission.xml")
     if (file.exists(xml_file)) {
-        full_df <- data.frame(submission_xml=TRUE)
         submission <- read_submission(xml_file)
         all_found <- sapply(names(tags), function(x) {
             these_tags <- tags[[x]]
@@ -39,14 +38,11 @@ extract_by_tags <- function(sub_dir, tags) {
                 NA
             }
         })
-        df <- data.frame(as.list(all_found))
-        cbind(full_df, df)
+        data.frame(as.list(all_found))
     } else {
-        full_df <- data.frame(submission_xml=FALSE)
         out <- rep(NA, length(tags))
         names(out) <- names(tags)
-        df <- data.frame(as.list(out))
-        cbind(full_df, df)
+        data.frame(as.list(out))
     }
 }
 
