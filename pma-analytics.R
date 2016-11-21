@@ -32,10 +32,33 @@ if (length(args) < 1) {
 
   #------------------------- BEGIN PMA ANALYTICS ----------------------#
   setwd(scripts_directory)
-  source("Instancetime.R")
 
-  src_dir <- file.path(storage_directory, "forms", form_id, "instances")
-  output <- file.path(export_directory, export_filename)
+  # ..... check FORM ID ..... #
+  source("form-lookup.R")
+  form_title <- form_id_map[[form_id]]
+  if (is.null(form_title)) {
+    stop("Unknown form_id: \"", form_id,"\". Check \"form-lookup.R\".")
+  }
+
+  # ..... setup and feedback ..... #
+  src_dir <- file.path(storage_directory, "ODK Briefcase Storage", "forms", form_title, "instances")
+  outpath <- file.path(export_directory, export_filename)
+  cat("  Analyzing instances downloaded into:", src_dir, "\n")
+  cat("  Intended output file:", outpath, "\n")
   
-  file_size(src_dir, output)
+  # ..... get the function ..... #
+  source("all-analysis.R")
+  prompts <- form_prompts[[form_id]]
+  milestones <- form_milestones[[form_id]]
+  tags <- form_tags[[form_id]]
+  FUN <- do_all_analysis(prompts=prompts, milestones=milestones, tags=tags)
+  
+  # ..... apply the function ..... #
+  source("analyze-dir.R")
+  start_time <- Sys.time()
+  analyze_dir_and_write(src_dir, FUN, outpath)
+  end_time <- Sys.time()
+  diff_time <- round(as.numeric(end_time - start_time, units="secs"))
+  # file_size(src_dir, output)
+  cat("Wrote output file. Analysis took", diff_time, "seconds.\n")
 }
